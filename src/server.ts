@@ -9,17 +9,18 @@ const PORT = process.env.PORT || 5000;
 
 const seedDemo = async (): Promise<void> => {
   const email = 'demo@smartbizai.com';
-  const existing = await User.findOne({ email });
-  if (existing) {
-    console.log('Demo user already exists');
-    return;
+  let user = await User.findOne({ email });
+  if (!user) {
+    const hashedPassword = await bcrypt.hash('Demo12345', 12);
+    user = new User({ email, password: hashedPassword, name: 'Demo User' });
+    await user.save();
   }
-  const hashedPassword = await bcrypt.hash('Demo12345', 12);
-  const user = new User({ email, password: hashedPassword, name: 'Demo User' });
-  await user.save();
-  const business = new Business({ name: 'Demo Business', owner: user._id, type: 'Retail', industry: 'E-commerce' });
-  await business.save();
-  console.log('Demo user and business created');
+  const businessCount = await Business.countDocuments({ owner: user._id });
+  if (businessCount === 0) {
+    const business = new Business({ name: 'Demo Business', owner: user._id, type: 'Retail', industry: 'E-commerce' });
+    await business.save();
+    console.log('Demo business created for existing user');
+  }
 };
 
 const startServer = async (): Promise<void> => {
